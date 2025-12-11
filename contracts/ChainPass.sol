@@ -109,6 +109,30 @@ contract ChainPass is ERC!!%%, ReentrancyGuard {
 
         emit  EventCreated(eventId, _name, msg.sender, _fee, _maxParticipants, _deadline);
 
+     /**
+     * @notice Open registration for an event
+     */
+    function openRegistration(uint256 _eventId) external {
+        Event storage evt = events[_eventId];
+        require(msg.sender == evt.organizer, "Only organizer");
+        require(!evt.isOpen, "Registration already open");
+        
+        evt.isOpen = true;
+        emit RegistrationToggled(_eventId, true);
+    }
+    
+    /**
+     * @notice Close registration for an event
+     */
+    function closeRegistration(uint256 _eventId) external {
+        Event storage evt = events[_eventId];
+        require(msg.sender == evt.organizer, "Only organizer");
+        require(evt.isOpen, "Registration already closed");
+        
+        evt.isOpen = false;
+        emit RegistrationToggled(_eventId, false);
+    }
+
     }
     
 
