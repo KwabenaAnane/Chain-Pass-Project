@@ -84,7 +84,32 @@ contract ChainPass is ERC!!%%, ReentrancyGuard {
      * @notice Create a new event
      */
 
-   
+    function createEvent(
+        string memory _name,
+        uint256 _fee,
+        uint256 _maxParticipants,
+        uint256 _deadline,
+        address _organizer
+    ) external {
+        require(_maxParticipants > 0, "Max participants must be greater than 0");
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+
+        eventCounter++;
+        uint256 eventId = eventCounter;
+
+        events[eventId] = Event({
+            name: _name,
+            fee: _fee,
+            maxParticipants: _maxParticipants,
+            deadline: _deadline,
+            organizer: msg.sender,
+            isOpen: true,
+            participantCount: 0
+        });
+
+        emit  EventCreated(eventId, _name, msg.sender, _fee, _maxParticipants, _deadline);
+
+    }
     
 
 
