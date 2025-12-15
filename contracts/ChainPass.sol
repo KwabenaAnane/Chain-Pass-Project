@@ -214,7 +214,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
 
         //Burn NFT Ticket
         _burn(msg.sender, _eventId, 1);
-        
+
          // Refund
         uint256 refundAmount = evt.fee;
         (bool success, ) = msg.sender.call{value: refundAmount}("");
@@ -222,11 +222,55 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         
         emit RegistrationCancelled(_eventId, msg.sender, refundAmount);
 
+        // ============ View Functions ============
+    
+    /**
+     * @notice Get all participants for an event
+     */
+    function getParticipants(uint256 _eventId) external view returns(address[] memory) {
+        return eventParticipants[_eventId];
+    }
+
+    /**
+     * @notice Get event details
+     */
+    function getEventDetails(uint256 _eventId) external view returns (Event memory) {
+        return events[_eventId];
+    }
+
+  // ============ Organizer Withdrawal ============
+    
+    /**
+     * @notice Organizer withdraws event funds after deadline
+     */
+    function withdrawFunds(uint256 _eventId) external nonReentrant onlyOrganizer(_eventId) {
+        _validateWithdrawal(_eventId);
+        
+        Event storage evt = events[_eventId];
+        uint256 amount = evt.fee * evt.participantCount;
+        
+        // Prevent double withdrawal
+        evt.participantCount = 0;
+        
+        (bool success, ) = msg.sender.call{value: amount}("");
+        if (!success) revert WithdrawalFailed();
+    }
+
+
+
+    
+    
+        
+    
+
+
+
+
 
 
 
         
-    }
+    
 
 
 
