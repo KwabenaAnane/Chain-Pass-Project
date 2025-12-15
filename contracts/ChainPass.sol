@@ -4,12 +4,13 @@ pragma solidity 0.8.28;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title ChainPass
  * @notice On-chain event registration with NFT tickets
  */
-contract ChainPass is ERC1155, ReentrancyGuard {
+contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
 
     // ============ Custom Errors ============
     
@@ -30,6 +31,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
     error EventNotEnded();
     error NoFundsToWithdraw();
     error WithdrawalFailed();
+    error FundsAlreadyWithdrawn();
     
     // ============ Modifiers ============
     
@@ -52,6 +54,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         address organizer;
         bool isOpen;
         uint256 participantCount;
+        bool fundsWithdrawn;
     }
 
      // ============ State Variables ============
@@ -93,7 +96,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
       );
 
        // ============ Constructor ============
-       constructor() ERC1155(""){
+       constructor() ERC1155("") Ownable(msg.sender) {
         // Base URI will be set after deployment or hardcoded here
         // Example: ERC1155("ipfs://YOUR_FOLDER_CID/")
 
@@ -102,7 +105,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
     /**
      * @notice Set base URI (only call once after uploading to IPFS)
      */
-    function setURI(string memory newuri) external {
+    function setURI(string memory newuri) external onlyOwner {
         _setURI(newuri);
     }
 
@@ -165,8 +168,9 @@ contract ChainPass is ERC1155, ReentrancyGuard {
             maxParticipants: _maxParticipants,
             deadline: _deadline,
             organizer: msg.sender,
-            isOpen: false,
-            participantCount: 0
+            isOpen: false, //Registration closed by default
+            participantCount: 0,
+            fundsWithdrawn: false
         });
 
         emit  EventCreated(eventId, _name, msg.sender, _fee, _maxParticipants, _deadline);
