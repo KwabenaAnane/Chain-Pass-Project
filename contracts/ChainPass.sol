@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * @title ChainPass
  * @notice On-chain event registration with NFT tickets
  */
-
 contract ChainPass is ERC1155, ReentrancyGuard {
 
     // ============ Custom Errors ============
@@ -45,7 +44,6 @@ contract ChainPass is ERC1155, ReentrancyGuard {
     }
 
     // ============ Structs ===========
-
     struct Event {
         string name;
         uint256 fee;
@@ -57,8 +55,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
     }
 
      // ============ State Variables ============
-
-     uint256 eventCounter;
+     uint256 public eventCounter;
      mapping(uint256 => Event) public events;
      mapping(uint256 => address[]) public eventParticipants;
      mapping(uint256 => mapping(address => bool)) public hasRegistered;
@@ -109,18 +106,52 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         _setURI(newuri);
     }
 
-       // ============ Organizer Functions ============
+   // ============ Internal Validators ============
     
+    /**
+     * @notice Validate registration eligibility
+     */
+    function _validateRegistration(uint256 _eventId, address _user) internal view {
+        Event storage evt = events[_eventId];
+        
+        if (!evt.isOpen) revert RegistrationClosed();
+        if (block.timestamp >= evt.deadline) revert RegistrationEnded();
+        if (evt.participantCount >= evt.maxParticipants) revert EventFull();
+        if (hasRegistered[_eventId][_user]) revert AlreadyRegistered();
+    }
+    
+    /**
+     * @notice Validate cancellation eligibility
+     */
+    function _validateCancellation(uint256 _eventId, address _user) internal view {
+        Event storage evt = events[_eventId];
+        
+        if (!hasRegistered[_eventId][_user]) revert NotRegistered();
+        if (block.timestamp >= evt.deadline) revert CannotCancelAfterDeadline();
+        if (!evt.isOpen) revert RegistrationClosed();
+    }
+    
+    /**
+     * @notice Validate withdrawal eligibility
+     */
+    function _validateWithdrawal(uint256 _eventId) internal view {
+        Event storage evt = events[_eventId];
+        
+        if (block.timestamp < evt.deadline) revert EventNotEnded();
+        
+        uint256 amount = evt.fee * evt.participantCount;
+        if (amount == 0) revert NoFundsToWithdraw();
+    }
+
+       // ============ Organizer Functions ============
     /**
      * @notice Create a new event
      */
-
     function createEvent(
         string memory _name,
         uint256 _fee,
         uint256 _maxParticipants,
-        uint256 _deadline,
-        address _organizer
+        uint256 _deadline
     ) external {
         if(_maxParticipants == 0) revert InvalidMaxParticipants();
         if(_deadline <= block.timestamp) revert DeadlineMustBeFuture(); 
@@ -134,16 +165,38 @@ contract ChainPass is ERC1155, ReentrancyGuard {
             maxParticipants: _maxParticipants,
             deadline: _deadline,
             organizer: msg.sender,
-            isOpen: true,
+            isOpen: false,
             participantCount: 0
         });
 
         emit  EventCreated(eventId, _name, msg.sender, _fee, _maxParticipants, _deadline);
-
+    }
     /**
      * @notice Open registration for an event
      */
     function openRegistration(uint256 _eventId) external onlyOrganizer(_eventId)  {
+        Event storage evt = events[_eventId];
+        if (evt.isOpen) revert RegistrationAlreadyOpen();
+        
+        evt.isOpen = true;
+        emit RegistrationToggled(_eventId, true);
+    }
+
+       /**
+     * @notice Pause registration for an event (temporary)
+     */
+    function pauseRegistration(uint256 _eventId) external onlyOrganizer(_eventId) {
+        Event storage evt = events[_eventId];
+        if (!evt.isOpen) revert RegistrationAlreadyClosed();
+        
+        evt.isOpen = false;
+        emit RegistrationToggled(_eventId, false);
+    }
+
+     /**
+     * @notice Reopen registration for an event (after pause)
+     */
+    function reopenRegistration(uint256 _eventId) external onlyOrganizer(_eventId) {
         Event storage evt = events[_eventId];
         if (evt.isOpen) revert RegistrationAlreadyOpen();
         
@@ -183,11 +236,11 @@ contract ChainPass is ERC1155, ReentrancyGuard {
             !hasRegistered[_eventId][msg.sender], "Already registered for this event");
         require(msg.value == evt.fee, "Incorrect fee");
 
-         // Mint NFT ticket (tokenId = eventId)
-         _mint(msg.sender, _eventId, 1, "");
-
+       // Mint NFT ticket (tokenId = eventId)
+        _mint(msg.sender, _eventId, 1, "");
+        
         emit Registered(_eventId, msg.sender, _eventId);
-        emit Ticker*Minted(_eventId, msg.sender);
+        emit TicketMinted(_eventId, msg.sender);
     }
 
       /**
@@ -221,6 +274,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         if (!success) revert RefundFailed();
         
         emit RegistrationCancelled(_eventId, msg.sender, refundAmount);
+    }
 
         // ============ View Functions ============
     
@@ -238,7 +292,15 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         return events[_eventId];
     }
 
-  // ============ Organizer Withdrawal ============
+      /**
+     * @notice Get token URI for NFT metadata
+     * @dev Returns: baseURI + tokenId + .json
+     */
+    function uri(uint256 _tokenId) public view override returns (string memory) {
+        return string(abi.encodePacked(super.uri(_tokenId), Strings.toString(_tokenId), ".json"));
+    }
+
+  // ============ Organizer Withdrawal of Event funds ============
     
     /**
      * @notice Organizer withdraws event funds after deadline
@@ -255,40 +317,4 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) revert WithdrawalFailed();
     }
-
-
-
-    
-    
-        
-    
-
-
-
-
-
-
-
-        
-    
-
-
-
-
-    }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
