@@ -292,6 +292,13 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         return events[_eventId];
     }
 
+    /**
+     * @notice Check if user is registered for event
+     */
+    function isRegistered(uint256 _eventId, address _user) external view returns (bool) {
+        return hasRegistered[_eventId][_user];
+    }
+    
       /**
      * @notice Get token URI for NFT metadata
      * @dev Returns: baseURI + tokenId + .json
