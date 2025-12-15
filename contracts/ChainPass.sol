@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
@@ -10,7 +10,39 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * @notice On-chain event registration with NFT tickets
  */
 
-contract ChainPass is ERC!!%%, ReentrancyGuard {
+contract ChainPass is ERC1155, ReentrancyGuard {
+
+    // ============ Custom Errors ============
+    
+    error InvalidMaxParticipants();
+    error DeadlineMustBeFuture();
+    error EventDoesNotExist();
+    error OnlyOrganizer();
+    error RegistrationClosed();
+    error RegistrationEnded();
+    error EventFull();
+    error IncorrectFee();
+    error AlreadyRegistered();
+    error NotRegistered();
+    error CannotCancelAfterDeadline();
+    error RefundFailed();
+    error RegistrationAlreadyOpen();
+    error RegistrationAlreadyClosed();
+    error EventNotEnded();
+    error NoFundsToWithdraw();
+    error WithdrawalFailed();
+    
+    // ============ Modifiers ============
+    
+    modifier onlyOrganizer(uint256 _eventId) {
+        if (msg.sender != events[_eventId].organizer) revert OnlyOrganizer();
+        _;
+    }
+    
+    modifier eventExists(uint256 _eventId) {
+        if (events[_eventId].organizer == address(0)) revert EventDoesNotExist();
+        _;
+    }
 
     // ============ Structs ===========
 
@@ -38,8 +70,7 @@ contract ChainPass is ERC!!%%, ReentrancyGuard {
           address indexed organizer,
           uint256 fee,
           uint256 maxParticipants,
-          uint256 deadline,
-        
+          uint256 deadline   
       );
 
       event Registered(
@@ -132,6 +163,25 @@ contract ChainPass is ERC!!%%, ReentrancyGuard {
         evt.isOpen = false;
         emit RegistrationToggled(_eventId, false);
     }
+
+    // ============ User Functions ============
+
+      /** 
+     * @notice Register for an event and receive NFT ticket
+     */
+    function registerForEvent(uint256 _eventId) external payable nonReentrant {
+        Event storage evt = events[_eventId];
+
+        require(evt.isOpen, "Registration is closed");
+        require(evt.participantCount < evt.maxParticipants, "Event is full");
+        require(evt.organizer !=address(0), "Event does not exist");
+        require(block.timestamp < evt.deadline, "Registration deadline has passed");
+        require(
+            !hasRegistered[_eventId][msg.sender], "Already registered for this event");
+        require(msg.value == evt.fee, "Incorrect fee");
+    }
+
+
 
     }
     
