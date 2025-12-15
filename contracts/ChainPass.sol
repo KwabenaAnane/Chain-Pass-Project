@@ -190,6 +190,45 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         emit Ticker*Minted(_eventId, msg.sender);
     }
 
+      /**
+     * @notice Cancel registration and get refund
+     */
+    function cancelRegistration(uint256 _eventId) external nonReentrant {
+        _validateCancellation(_eventId, msg.sender);
+
+        Event storage evt = events[_eventId];
+
+        // Update state
+        hasRegistered[_eventId][msg.sender] = false;
+        evt.participantCount--;
+
+        // Remove from participants array
+        address[] storage participants = eventParticipants[_eventId];
+        for (uint256 i = 0; i < participants.length; i++) {
+            if (participants[i] == msg.sender) {
+                participants[i] = participants[participants.length - 1];
+                participants.pop();
+                break;
+            }
+        }
+
+        //Burn NFT Ticket
+        _burn(msg.sender, _eventId, 1);
+        
+         // Refund
+        uint256 refundAmount = evt.fee;
+        (bool success, ) = msg.sender.call{value: refundAmount}("");
+        if (!success) revert RefundFailed();
+        
+        emit RegistrationCancelled(_eventId, msg.sender, refundAmount);
+
+
+
+
+        
+    }
+
+
 
 
     }
