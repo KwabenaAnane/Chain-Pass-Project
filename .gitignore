@@ -1,6 +1,11 @@
-# Remix compiler artifacts
+#hardhatartifacts
 **/artifacts/
 **/artifacts/**
+cache/
+artifacts/
+ignition/deployments/
+node_modules/
+
 
 # Remix plugin state folders
 deps/
