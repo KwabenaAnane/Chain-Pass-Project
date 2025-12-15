@@ -63,7 +63,7 @@ contract ChainPass is ERC1155, ReentrancyGuard {
      mapping(uint256 => address[]) public eventParticipants;
      mapping(uint256 => mapping(address => bool)) public hasRegistered;
 
-      // ============ Events ============
+      // ============ Events ============  //
       event EventCreated(
           uint256 indexed eventId,
           string name,
@@ -122,8 +122,8 @@ contract ChainPass is ERC1155, ReentrancyGuard {
         uint256 _deadline,
         address _organizer
     ) external {
-        require(_maxParticipants > 0, "Max participants must be greater than 0");
-        require(_deadline > block.timestamp, "Deadline must be in the future");
+        if(_maxParticipants == 0) revert InvalidMaxParticipants();
+        if(_deadline <= block.timestamp) revert DeadlineMustBeFuture(); 
 
         eventCounter++;
         uint256 eventId = eventCounter;
@@ -140,13 +140,12 @@ contract ChainPass is ERC1155, ReentrancyGuard {
 
         emit  EventCreated(eventId, _name, msg.sender, _fee, _maxParticipants, _deadline);
 
-     /**
+    /**
      * @notice Open registration for an event
      */
-    function openRegistration(uint256 _eventId) external {
+    function openRegistration(uint256 _eventId) external onlyOrganizer(_eventId)  {
         Event storage evt = events[_eventId];
-        require(msg.sender == evt.organizer, "Only organizer");
-        require(!evt.isOpen, "Registration already open");
+        if (evt.isOpen) revert RegistrationAlreadyOpen();
         
         evt.isOpen = true;
         emit RegistrationToggled(_eventId, true);
@@ -155,10 +154,9 @@ contract ChainPass is ERC1155, ReentrancyGuard {
     /**
      * @notice Close registration for an event
      */
-    function closeRegistration(uint256 _eventId) external {
+    function closeRegistration(uint256 _eventId) external onlyOrganizer(_eventId) {
         Event storage evt = events[_eventId];
-        require(msg.sender == evt.organizer, "Only organizer");
-        require(evt.isOpen, "Registration already closed");
+        if(!evt.isOpen) revert RegistrationAlreadyClosed();
         
         evt.isOpen = false;
         emit RegistrationToggled(_eventId, false);
@@ -169,16 +167,27 @@ contract ChainPass is ERC1155, ReentrancyGuard {
       /** 
      * @notice Register for an event and receive NFT ticket
      */
-    function registerForEvent(uint256 _eventId) external payable nonReentrant {
+    function registerForEvent(uint256 _eventId) external payable nonReentrant eventExists(_eventId) {
+        if (msg.value != events[_eventId].fee) revert IncorrectFee();
+
+        _validateRegistration(_eventId, msg.sender);
+       
         Event storage evt = events[_eventId];
 
-        require(evt.isOpen, "Registration is closed");
-        require(evt.participantCount < evt.maxParticipants, "Event is full");
-        require(evt.organizer !=address(0), "Event does not exist");
-        require(block.timestamp < evt.deadline, "Registration deadline has passed");
+       // Update state
+        hasRegistered[_eventId][msg.sender] = true;
+        eventParticipants[_eventId].push(msg.sender);
+        evt.participantCount++;
+
         require(
             !hasRegistered[_eventId][msg.sender], "Already registered for this event");
         require(msg.value == evt.fee, "Incorrect fee");
+
+         // Mint NFT ticket (tokenId = eventId)
+         _mint(msg.sender, _eventId, 1, "");
+
+        emit Registered(_eventId, msg.sender, _eventId);
+        emit Ticker*Minted(_eventId, msg.sender);
     }
 
 
