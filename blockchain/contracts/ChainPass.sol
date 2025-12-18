@@ -7,13 +7,11 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title ChainPass
  * @notice On-chain event registration with NFT tickets
  */
 contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
 
     // ============ Custom Errors ============
-    
     error InvalidMaxParticipants();
     error DeadlineMustBeFuture();
     error EventDoesNotExist();
