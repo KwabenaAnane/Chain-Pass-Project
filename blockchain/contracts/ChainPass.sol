@@ -95,11 +95,15 @@ contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
         bool isOpen
       );
 
+      event FundsWithdrawn(
+        uint256 indexed eventId,
+        address indexed organizer,
+        uint256 amount
+      );
+
        // ============ Constructor ============
        constructor() ERC1155("") Ownable(msg.sender) {
-        // Base URI will be set after deployment or hardcoded here
-        // Example: ERC1155("ipfs://YOUR_FOLDER_CID/")
-
+      
        }
 
     /**
@@ -115,7 +119,7 @@ contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
      * @notice Validate registration eligibility
      */
     function _validateRegistration(uint256 _eventId, address _user) internal view {
-        Event storage evt = events[_eventId];
+        Event memory evt = events[_eventId];
         
         if (!evt.isOpen) revert RegistrationClosed();
         if (block.timestamp >= evt.deadline) revert RegistrationEnded();
@@ -141,7 +145,8 @@ contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
         Event storage evt = events[_eventId];
         
         if (block.timestamp < evt.deadline) revert EventNotEnded();
-        
+        if (evt.fundsWithdrawn) revert FundsAlreadyWithdrawn();
+
         uint256 amount = evt.fee * evt.participantCount;
         if (amount == 0) revert NoFundsToWithdraw();
     }
@@ -236,10 +241,6 @@ contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
         eventParticipants[_eventId].push(msg.sender);
         evt.participantCount++;
 
-        require(
-            !hasRegistered[_eventId][msg.sender], "Already registered for this event");
-        require(msg.value == evt.fee, "Incorrect fee");
-
        // Mint NFT ticket (tokenId = eventId)
         _mint(msg.sender, _eventId, 1, "");
         
@@ -323,9 +324,11 @@ contract ChainPass is ERC1155, ReentrancyGuard, Ownable {
         uint256 amount = evt.fee * evt.participantCount;
         
         // Prevent double withdrawal
-        evt.participantCount = 0;
-        
+        evt.fundsWithdrawn = true;
+ 
         (bool success, ) = msg.sender.call{value: amount}("");
         if (!success) revert WithdrawalFailed();
+
+        emit FundsWithdrawn(_eventId, msg.sender, amount);
     }
 }
