@@ -110,15 +110,25 @@ function TicketCard({ eventId, userAddress }: { eventId: number; userAddress: st
             <p>💰 Paid: {formatETH(event.fee)} ETH</p>
             <p>📅 {formatDate(Number(event.deadline))}</p>
           </div>
-          <Link 
-            href={`/events/${eventId}`}
-            className="inline-block mt-3 text-primary hover:underline text-sm"
-          >
-            View Event Details →
-          </Link>
+          <div className="flex gap-3 mt-3">
+            <Link 
+              href={`/events/${eventId}`}
+              className="text-primary hover:underline text-sm"
+            >
+              View Event →
+            </Link>
+            <a
+              href={`https://testnet.rarible.com/token/sepolia/${CONTRACT_ADDRESS}:${eventId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-secondary hover:underline text-sm"
+            >
+              View on Rarible →
+            </a>
+          </div>
         </div>
       </div>
-
+      
       {/* Metadata Attributes */}
       {metadata?.attributes && (
         <div className="mt-4 pt-4 border-t border-white/10">
