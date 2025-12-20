@@ -1,4 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
+import { http } from 'viem';
 import { sepolia } from 'wagmi/chains';
 
 // Contract address
@@ -9,5 +10,8 @@ export const config = getDefaultConfig({
   appName: 'ChainPass',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!, 
   chains: [sepolia],
+transports: {
+  [sepolia.id]: http(`https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
+},
   ssr: true,
 });
