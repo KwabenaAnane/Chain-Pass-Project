@@ -1,7 +1,7 @@
 {
   "name": "ChainPass Event Ticket #2",
   "description": "Verified access pass for event. Powered by ChainPass - decentralized event registration.",
-  "image": "ipfs://bafkreiemhokryirg2kk7pkjubkuzphxyrz6fkexna3irektotygqqx5m4a/ticket.jpg",
+  "image": "ipfs://bafkreiemhokryirg2kk7pkjubkuzphxyrz6fkexna3irektotygqqx5m4a",
   "attributes": [
     {
       "trait_type": "Event ID",
