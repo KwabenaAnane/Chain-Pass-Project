@@ -15,7 +15,7 @@ export declare namespace ChainPass {
   export interface ChainPassInterface extends Interface {
     getFunction(nameOrSignature: "balanceOf" | "balanceOfBatch" | "cancelRegistration" | "closeRegistration" | "createEvent" | "eventCounter" | "eventParticipants" | "events" | "getEventDetails" | "getParticipants" | "hasRegistered" | "isApprovedForAll" | "isRegistered" | "openRegistration" | "owner" | "pauseRegistration" | "registerForEvent" | "renounceOwnership" | "reopenRegistration" | "safeBatchTransferFrom" | "safeTransferFrom" | "setApprovalForAll" | "setURI" | "supportsInterface" | "transferOwnership" | "uri" | "withdrawFunds"): FunctionFragment;
 
-    getEvent(nameOrSignatureOrTopic: "ApprovalForAll" | "EventCreated" | "OwnershipTransferred" | "Registered" | "RegistrationCancelled" | "RegistrationToggled" | "TicketMinted" | "TransferBatch" | "TransferSingle" | "URI"): EventFragment;
+    getEvent(nameOrSignatureOrTopic: "ApprovalForAll" | "EventCreated" | "FundsWithdrawn" | "OwnershipTransferred" | "Registered" | "RegistrationCancelled" | "RegistrationToggled" | "TicketMinted" | "TransferBatch" | "TransferSingle" | "URI"): EventFragment;
 
     encodeFunctionData(functionFragment: 'balanceOf', values: [AddressLike, BigNumberish]): string;
 encodeFunctionData(functionFragment: 'balanceOfBatch', values: [AddressLike[], BigNumberish[]]): string;
@@ -91,6 +91,18 @@ decodeFunctionResult(functionFragment: 'withdrawFunds', data: BytesLike): Result
       export type InputTuple = [eventId: BigNumberish, name: string, organizer: AddressLike, fee: BigNumberish, maxParticipants: BigNumberish, deadline: BigNumberish];
       export type OutputTuple = [eventId: bigint, name: string, organizer: string, fee: bigint, maxParticipants: bigint, deadline: bigint];
       export interface OutputObject {eventId: bigint, name: string, organizer: string, fee: bigint, maxParticipants: bigint, deadline: bigint };
+      export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
+      export type Filter = TypedDeferredTopicFilter<Event>
+      export type Log = TypedEventLog<Event>
+      export type LogDescription = TypedLogDescription<Event>
+    }
+
+  
+
+    export namespace FundsWithdrawnEvent {
+      export type InputTuple = [eventId: BigNumberish, organizer: AddressLike, amount: BigNumberish];
+      export type OutputTuple = [eventId: bigint, organizer: string, amount: bigint];
+      export interface OutputObject {eventId: bigint, organizer: string, amount: bigint };
       export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>
       export type Filter = TypedDeferredTopicFilter<Event>
       export type Log = TypedEventLog<Event>
@@ -585,6 +597,7 @@ getFunction(nameOrSignature: 'withdrawFunds'): TypedContractMethod<
 
     getEvent(key: 'ApprovalForAll'): TypedContractEvent<ApprovalForAllEvent.InputTuple, ApprovalForAllEvent.OutputTuple, ApprovalForAllEvent.OutputObject>;
 getEvent(key: 'EventCreated'): TypedContractEvent<EventCreatedEvent.InputTuple, EventCreatedEvent.OutputTuple, EventCreatedEvent.OutputObject>;
+getEvent(key: 'FundsWithdrawn'): TypedContractEvent<FundsWithdrawnEvent.InputTuple, FundsWithdrawnEvent.OutputTuple, FundsWithdrawnEvent.OutputObject>;
 getEvent(key: 'OwnershipTransferred'): TypedContractEvent<OwnershipTransferredEvent.InputTuple, OwnershipTransferredEvent.OutputTuple, OwnershipTransferredEvent.OutputObject>;
 getEvent(key: 'Registered'): TypedContractEvent<RegisteredEvent.InputTuple, RegisteredEvent.OutputTuple, RegisteredEvent.OutputObject>;
 getEvent(key: 'RegistrationCancelled'): TypedContractEvent<RegistrationCancelledEvent.InputTuple, RegistrationCancelledEvent.OutputTuple, RegistrationCancelledEvent.OutputObject>;
@@ -602,6 +615,10 @@ getEvent(key: 'URI'): TypedContractEvent<URIEvent.InputTuple, URIEvent.OutputTup
 
       'EventCreated(uint256,string,address,uint256,uint256,uint256)': TypedContractEvent<EventCreatedEvent.InputTuple, EventCreatedEvent.OutputTuple, EventCreatedEvent.OutputObject>;
       EventCreated: TypedContractEvent<EventCreatedEvent.InputTuple, EventCreatedEvent.OutputTuple, EventCreatedEvent.OutputObject>;
+    
+
+      'FundsWithdrawn(uint256,address,uint256)': TypedContractEvent<FundsWithdrawnEvent.InputTuple, FundsWithdrawnEvent.OutputTuple, FundsWithdrawnEvent.OutputObject>;
+      FundsWithdrawn: TypedContractEvent<FundsWithdrawnEvent.InputTuple, FundsWithdrawnEvent.OutputTuple, FundsWithdrawnEvent.OutputObject>;
     
 
       'OwnershipTransferred(address,address)': TypedContractEvent<OwnershipTransferredEvent.InputTuple, OwnershipTransferredEvent.OutputTuple, OwnershipTransferredEvent.OutputObject>;
