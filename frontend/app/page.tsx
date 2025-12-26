@@ -7,7 +7,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 py-12 md:py-20">
         <div className="text-center space-y-6 mb-16">
-          <div className="inline-block animate-bounce">
+          <div className="inline-block">
             <span className="text-7xl md:text-8xl">🎟️</span>
           </div>
           
