@@ -2,26 +2,103 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------- Base ---------------- */
 @layer base {
+   *, *::before, *::after {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+
   body {
-    @apply bg-gradient-dark bg-fixed text-white min-h-screen;
+    background-image: linear-gradient(
+      135deg,
+      #0f0e17 0%,
+      #1a1625 25%,
+      #251e3a 50%,
+      #1a1625 75%,
+      #0f0e17 100%
+    );
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: white;
   }
 }
 
+/* ---------------- Components ---------------- */
 @layer components {
   .btn-primary {
-    @apply bg-gradient-purple text-white font-bold py-3 px-8 rounded-xl hover:shadow-lg hover:shadow-primary/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-image: linear-gradient(135deg, #a855f7 0%, #ec4899 20%);
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
   }
-  
+
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .btn-secondary {
-    @apply bg-white/5 backdrop-blur text-white font-bold py-3 px-8 rounded-xl border-2 border-white/10 hover:border-primary hover:bg-white/10 transition-all duration-300;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
   }
-  
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #a855f7;
+    color: white;
+  }
+
   .card {
-    @apply bg-gradient-card backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-primary/50 transition-all duration-300 shadow-xl;
+    background-image: linear-gradient(
+      135deg,
+      rgba(168, 85, 247, 0.1) 0%,
+      rgba(236, 72, 153, 0.1) 100%
+    );
+    backdrop-filter: blur(20px);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    border-color: rgba(168, 85, 247, 0.5);
   }
 
   .input-field {
-    @apply w-full px-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl focus:border-primary focus:bg-white/10 outline-none transition-all duration-300 text-white placeholder-gray-400;
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    color: white;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .input-field::placeholder {
+    color: #9ca3af;
+  }
+
+  .input-field:focus {
+    border-color: #a855f7;
+    background: rgba(255, 255, 255, 0.1);
   }
 }
