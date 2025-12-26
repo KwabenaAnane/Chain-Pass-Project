@@ -75,6 +75,61 @@ describe("ChainPass", function () {
     });
   });
 
+  describe("Registration Management", function () {
+    async function createEventFixture() {
+      const { chainpass, organizer, user1, user2 } = await loadFixture(deployChainPassFixture);
+      
+      const deadline = (await time.latest()) + 86400;
+      await chainpass.connect(organizer).createEvent(
+        "Test Event",
+        ethers.parseEther("0.1"),
+        10,
+        deadline
+      );
+      
+      return { chainpass, organizer, user1, user2, deadline };
+    }
+
+    it("Should open registration", async function () {
+      const { chainpass, organizer } = await loadFixture(createEventFixture);
+      
+      await expect(chainpass.connect(organizer).openRegistration(1))
+        .to.emit(chainpass, "RegistrationToggled")
+        .withArgs(1, true);
+      
+      const event = await chainpass.getEventDetails(1);
+      expect(event.isOpen).to.be.true;
+    });
+
+    it("Should close registration", async function () {
+      const { chainpass, organizer } = await loadFixture(createEventFixture);
+      
+      await chainpass.connect(organizer).openRegistration(1);
+      await chainpass.connect(organizer).closeRegistration(1);
+      
+      const event = await chainpass.getEventDetails(1);
+      expect(event.isOpen).to.be.false;
+    });
+
+    it("Should revert if non-organizer tries to open registration", async function () {
+      const { chainpass, user1 } = await loadFixture(createEventFixture);
+      
+      await expect(
+        chainpass.connect(user1).openRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "OnlyOrganizer");
+    });
+
+    it("Should revert when opening already open registration", async function () {
+      const { chainpass, organizer } = await loadFixture(createEventFixture);
+      
+      await chainpass.connect(organizer).openRegistration(1);
+      
+      await expect(
+        chainpass.connect(organizer).openRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "RegistrationAlreadyOpen");
+    });
+  });
+
 
 
 
