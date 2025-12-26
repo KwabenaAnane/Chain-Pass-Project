@@ -18,9 +18,11 @@ export default function MyTicketsPage() {
 
   if (!address) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="card text-center py-12">
-          <p className="text-gray-400">Connect your wallet to view your tickets</p>
+      <div className='max-w-4xl mx-auto px-4 py-12'>
+        <div className='card text-center py-12'>
+          <p className='text-gray-400'>
+            Connect your wallet to view your tickets
+          </p>
         </div>
       </div>
     );
@@ -30,10 +32,10 @@ export default function MyTicketsPage() {
   const eventIds = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-4xl font-bold mb-8">My Tickets</h1>
-      
-      <div className="space-y-4">
+    <div className='max-w-4xl mx-auto px-4 py-12'>
+      <h1 className='text-4xl font-bold mb-8'>My Tickets</h1>
+
+      <div className='space-y-4'>
         {eventIds.map((id) => (
           <TicketCard key={id} eventId={id} userAddress={address} />
         ))}
@@ -42,7 +44,13 @@ export default function MyTicketsPage() {
   );
 }
 
-function TicketCard({ eventId, userAddress }: { eventId: number; userAddress: string }) {
+function TicketCard({
+  eventId,
+  userAddress,
+}: {
+  eventId: number;
+  userAddress: string;
+}) {
   const [metadata, setMetadata] = useState<any>(null);
 
   const { data: balance } = useReadContract({
@@ -72,11 +80,11 @@ function TicketCard({ eventId, userAddress }: { eventId: number; userAddress: st
     if (tokenURI) {
       // Convert IPFS URI to HTTP gateway
       const httpUrl = tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/');
-      
+
       fetch(httpUrl)
-        .then(res => res.json())
-        .then(data => setMetadata(data))
-        .catch(err => console.error('Error fetching metadata:', err));
+        .then((res) => res.json())
+        .then((data) => setMetadata(data))
+        .catch((err) => console.error('Error fetching metadata:', err));
     }
   }, [tokenURI]);
 
@@ -85,56 +93,54 @@ function TicketCard({ eventId, userAddress }: { eventId: number; userAddress: st
   const imageUrl = metadata?.image?.replace('ipfs://', 'https://ipfs.io/ipfs/');
 
   return (
-    <div className="card hover:scale-105 transition">
-      <div className="flex gap-6">
+    <div className='card hover:scale-105 transition'>
+      <div className='flex gap-6'>
         {/* NFT Image */}
-        <div className="flex-shrink-0">
+        <div className='flex-shrink-0'>
           {imageUrl ? (
-            <img 
-              src={imageUrl} 
-              alt="Ticket NFT" 
-              className="w-32 h-32 rounded-lg object-cover border-2 border-primary/50"
+            <img
+              src={imageUrl}
+              alt='Ticket NFT'
+              className='w-32 h-32 rounded-lg object-cover border-2 border-primary/50'
             />
           ) : (
-            <div className="w-32 h-32 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-4xl">
+            <div className='w-32 h-32 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center text-4xl'>
               🎟️
             </div>
           )}
         </div>
 
         {/* Event Details */}
-        <div className="flex-1">
-          <h3 className="text-xl font-bold mb-2">{event.name}</h3>
-          <div className="space-y-1 text-sm text-gray-300">
+        <div className='flex-1'>
+          <h3 className='text-xl font-bold mb-2'>{event.name}</h3>
+          <div className='space-y-1 text-sm text-gray-300'>
             <p>🎫 Token ID: #{eventId}</p>
             <p>💰 Paid: {formatETH(event.fee)} ETH</p>
             <p>📅 {formatDate(Number(event.deadline))}</p>
           </div>
-          <div className="flex gap-3 mt-3">
-            <Link 
+          <div className='flex gap-3 mt-3'>
+            <Link
               href={`/events/${eventId}`}
-              className="text-primary hover:underline text-sm"
-            >
-              View Event →
+              className='text-primary hover:underline text-sm'>
+              View Event Details →
             </Link>
             <a
-              href={`https://testnet.rarible.com/token/sepolia/${CONTRACT_ADDRESS}:${eventId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-secondary hover:underline text-sm"
-            >
-              View on Rarible →
+              href={`https://testnet.rarible.com/user/${userAddress}/owned`}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='text-secondary hover:underline text-sm'>
+              View NFT on Rarible →
             </a>
           </div>
         </div>
       </div>
-      
+
       {/* Metadata Attributes */}
       {metadata?.attributes && (
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <div className="flex gap-2 flex-wrap">
+        <div className='mt-4 pt-4 border-t border-white/10'>
+          <div className='flex gap-2 flex-wrap'>
             {metadata.attributes.map((attr: any, i: number) => (
-              <span key={i} className="bg-white/5 px-3 py-1 rounded text-xs">
+              <span key={i} className='bg-white/5 px-3 py-1 rounded text-xs'>
                 {attr.trait_type}: {attr.value}
               </span>
             ))}
