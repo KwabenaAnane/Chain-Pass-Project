@@ -84,3 +84,47 @@ describe("ChainPass", function () {
       ).to.be.revertedWithCustomError(chainpass, "DeadlineMustBeFuture");
     });
   });
+
+  // ---------------- Registration Management ----------------
+  describe("Registration Management", () => {
+    async function createEventWithOrganizer() {
+      const { chainpass, organizer, user1, user2 } = await deployChainPass();
+      const deadline = await futureDeadline();
+      await chainpass.connect(organizer).createEvent(
+        "Test Event",
+        ethers.parseEther("0.1"),
+        10,
+        deadline
+      );
+      return { chainpass, organizer, user1, user2 };
+    }
+
+    it("should allow organizer to open and close registration", async () => {
+      const { chainpass, organizer } = await createEventWithOrganizer();
+
+      await chainpass.connect(organizer).openRegistration(1);
+      let event = await chainpass.getEventDetails(1);
+      expect(event.isOpen).to.be.true;
+
+      await chainpass.connect(organizer).closeRegistration(1);
+      event = await chainpass.getEventDetails(1);
+      expect(event.isOpen).to.be.false;
+    });
+
+    it("should revert if non-organizer tries to open registration", async () => {
+      const { chainpass, user1 } = await createEventWithOrganizer();
+
+      await expect(
+        chainpass.connect(user1).openRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "OnlyOrganizer");
+    });
+
+    it("should revert when opening already open registration", async () => {
+      const { chainpass, organizer } = await createEventWithOrganizer();
+      await chainpass.connect(organizer).openRegistration(1);
+
+      await expect(
+        chainpass.connect(organizer).openRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "RegistrationAlreadyOpen");
+    });
+  });
