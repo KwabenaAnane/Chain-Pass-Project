@@ -3,9 +3,9 @@ import { ethers } from "hardhat-ethers";
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 
 describe("ChainPass", function () {
-  
-              //FIXTURE
-    
+
+  //FIXTURE
+
   async function deployChainPassFixture() {
     const [owner, organizer, user1, user2] = await ethers.getSigners();
 
@@ -16,7 +16,7 @@ describe("ChainPass", function () {
     return { chainpass, owner, organizer, user1, user2 };
   }
 
-    async function createEvent(chainpass: any, organizer: any) {
+  async function createEvent(chainpass: any, organizer: any) {
     const deadline = (await time.latest()) + 86400;
 
     await chainpass.connect(organizer).createEvent(
@@ -29,14 +29,14 @@ describe("ChainPass", function () {
     return deadline;
   }
 
-    async function createAndOpenEvent(chainpass: any, organizer: any) {
+  async function createAndOpenEvent(chainpass: any, organizer: any) {
     const deadline = await createEvent(chainpass, organizer);
     await chainpass.connect(organizer).openRegistration(1);
     return deadline;
   }
 
-                //EVENT CREATION
-    describe("Event Creation", function () {
+  //EVENT CREATION
+  describe("Event Creation", function () {
     it("creates an event successfully", async function () {
       const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
       const deadline = await createEvent(chainpass, organizer);
@@ -80,7 +80,29 @@ describe("ChainPass", function () {
     });
   });
 
-                  //REGISTRATION MANAGEMENT
+  //REGISTRATION MANAGEMENT
+
+  describe("Registration Management", function () {
+    it("opens and closes registration", async function () {
+      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+      await createEvent(chainpass, organizer);
+
+      await chainpass.connect(organizer).openRegistration(1);
+      expect((await chainpass.getEventDetails(1)).isOpen).to.equal(true);
+
+      await chainpass.connect(organizer).closeRegistration(1);
+      expect((await chainpass.getEventDetails(1)).isOpen).to.equal(false);
+    });
+
+    it("prevents non-organizer from managing registration", async function () {
+      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
+      await createEvent(chainpass, organizer);
+
+      await expect(
+        chainpass.connect(user1).openRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "OnlyOrganizer");
+    });
+  });
 
 
 
