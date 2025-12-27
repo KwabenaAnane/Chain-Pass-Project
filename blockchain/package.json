@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "compile": "hardhat compile"
   },
   "repository": {
     "type": "git",

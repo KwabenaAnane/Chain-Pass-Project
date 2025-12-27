@@ -1,10 +1,11 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-ethers";
-import hardhatToolboxMochaEthersPlugin from "@nomicfoundation/hardhat-toolbox-mocha-ethers";
+import "@nomicfoundation/hardhat-toolbox-mocha-ethers";
 import { configVariable } from "hardhat/config";
-import hardhatVerify from "@nomicfoundation/hardhat-verify";
+import "@nomicfoundation/hardhat-verify";
+
 const config: HardhatUserConfig = {
-  plugins: [hardhatToolboxMochaEthersPlugin, hardhatVerify],
+
   solidity: {
     profiles: {
       default: {

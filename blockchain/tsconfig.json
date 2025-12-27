@@ -8,6 +8,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "moduleResolution": "node16",
-    "outDir": "dist"
+    "outDir": "dist",
+
+      "types": [
+      "node",
+      "mocha",
+      "chai",
+      "hardhat"
+    ]
   }
 }

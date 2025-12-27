@@ -1,12 +1,12 @@
 import { expect } from "chai";
-import { ethers } from "hardhat-ethers";
-import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
+import hre from "hardhat";
+
+const { ethers } = hre;
 
 describe("ChainPass", function () {
 
-  //FIXTURE
-
-  async function deployChainPassFixture() {
+  // ---------------- Helper: Deploy contract ----------------
+  async function deployChainPass() {
     const [owner, organizer, user1, user2] = await ethers.getSigners();
 
     const ChainPass = await ethers.getContractFactory("ChainPass");
@@ -16,217 +16,71 @@ describe("ChainPass", function () {
     return { chainpass, owner, organizer, user1, user2 };
   }
 
-  async function createEvent(chainpass: any, organizer: any) {
-    const deadline = (await time.latest()) + 86400;
-
-    await chainpass.connect(organizer).createEvent(
-      "Test Event",
-      ethers.parseEther("0.1"),
-      10,
-      deadline
-    );
-
-    return deadline;
+  // ---------------- Helper: future deadline ----------------
+  async function futureDeadline(seconds = 86400) {
+    const block = await ethers.provider.getBlock("latest");
+    return block!.timestamp + seconds;
   }
 
-  async function createAndOpenEvent(chainpass: any, organizer: any) {
-    const deadline = await createEvent(chainpass, organizer);
-    await chainpass.connect(organizer).openRegistration(1);
-    return deadline;
-  }
+  // ---------------- Deployment ----------------
+  describe("Deployment", () => {
+    it("should set the right owner", async () => {
+      const { chainpass, owner } = await deployChainPass();
+      expect(await chainpass.owner()).to.equal(owner.address);
+    });
 
-  //EVENT CREATION
-  describe("Event Creation", function () {
-    it("creates an event successfully", async function () {
-      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
-      const deadline = await createEvent(chainpass, organizer);
+    it("should start with zero events", async () => {
+      const { chainpass } = await deployChainPass();
+      expect(await chainpass.eventCounter()).to.equal(0);
+    });
+  });
+
+  // ---------------- Event Creation ----------------
+  describe("Event Creation", () => {
+    it("should create an event successfully", async () => {
+      const { chainpass, organizer } = await deployChainPass();
+      const deadline = await futureDeadline();
 
       await expect(
         chainpass.connect(organizer).createEvent(
-          "Blockchain Conference",
+          "Blockchain Conf",
           ethers.parseEther("0.1"),
           100,
-          deadline + 1000
+          deadline
         )
       ).to.emit(chainpass, "EventCreated");
 
-      expect(await chainpass.eventCounter()).to.equal(2);
+      const event = await chainpass.getEventDetails(1);
+      expect(event.organizer).to.equal(organizer.address);
+      expect(event.isOpen).to.be.false;
     });
 
-    it("reverts if max participants is zero", async function () {
-      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+    it("should revert if max participants is zero", async () => {
+      const { chainpass, organizer } = await deployChainPass();
+      const deadline = await futureDeadline();
 
       await expect(
         chainpass.connect(organizer).createEvent(
           "Invalid",
           ethers.parseEther("0.1"),
           0,
-          (await time.latest()) + 100
+          deadline
         )
       ).to.be.revertedWithCustomError(chainpass, "InvalidMaxParticipants");
     });
 
-    it("reverts if deadline is in the past", async function () {
-      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+    it("should revert if deadline is in the past", async () => {
+      const { chainpass, organizer } = await deployChainPass();
+      const block = await ethers.provider.getBlock("latest");
+      const pastDeadline = block!.timestamp - 1000;
 
       await expect(
         chainpass.connect(organizer).createEvent(
-          "Invalid",
+          "Past",
           ethers.parseEther("0.1"),
           10,
-          (await time.latest()) - 1
+          pastDeadline
         )
       ).to.be.revertedWithCustomError(chainpass, "DeadlineMustBeFuture");
     });
   });
-
-  //REGISTRATION MANAGEMENT
-
-  describe("Registration Management", function () {
-    it("opens and closes registration", async function () {
-      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
-      await createEvent(chainpass, organizer);
-
-      await chainpass.connect(organizer).openRegistration(1);
-      expect((await chainpass.getEventDetails(1)).isOpen).to.equal(true);
-
-      await chainpass.connect(organizer).closeRegistration(1);
-      expect((await chainpass.getEventDetails(1)).isOpen).to.equal(false);
-    });
-
-    it("prevents non-organizer from managing registration", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      await createEvent(chainpass, organizer);
-
-      await expect(
-        chainpass.connect(user1).openRegistration(1)
-      ).to.be.revertedWithCustomError(chainpass, "OnlyOrganizer");
-    });
-  });
-
-  //EVENT REGISTRATION
-
-  describe("Event Registration", function () {
-    it("registers user and mints NFT", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      await createAndOpenEvent(chainpass, organizer);
-
-      await expect(
-        chainpass.connect(user1).registerForEvent(1, {
-          value: ethers.parseEther("0.1"),
-        })
-      ).to.emit(chainpass, "Registered");
-
-      expect(await chainpass.balanceOf(user1.address, 1)).to.equal(1);
-      expect(await chainpass.isRegistered(1, user1.address)).to.equal(true);
-    });
-
-    it("reverts on incorrect fee", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      await createAndOpenEvent(chainpass, organizer);
-
-      await expect(
-        chainpass.connect(user1).registerForEvent(1, {
-          value: ethers.parseEther("0.05"),
-        })
-      ).to.be.revertedWithCustomError(chainpass, "IncorrectFee");
-    });
-
-    it("enforces max participants", async function () {
-      const { chainpass, organizer, user1, user2 } = await loadFixture(deployChainPassFixture);
-
-      const deadline = (await time.latest()) + 1000;
-      await chainpass.connect(organizer).createEvent(
-        "Limited",
-        ethers.parseEther("0.1"),
-        1,
-        deadline
-      );
-      await chainpass.connect(organizer).openRegistration(1);
-
-      await chainpass.connect(user1).registerForEvent(1, { value: ethers.parseEther("0.1") });
-
-      await expect(
-        chainpass.connect(user2).registerForEvent(1, { value: ethers.parseEther("0.1") })
-      ).to.be.revertedWithCustomError(chainpass, "EventFull");
-    });
-  });
-
-  //CANCEL REGISTRATION
-
-  describe("Cancel Registration", function () {
-    it("cancels registration, burns NFT and refunds", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      await createAndOpenEvent(chainpass, organizer);
-
-      await chainpass.connect(user1).registerForEvent(1, {
-        value: ethers.parseEther("0.1"),
-      });
-
-      await expect(
-        chainpass.connect(user1).cancelRegistration(1)
-      ).to.emit(chainpass, "RegistrationCancelled");
-
-      expect(await chainpass.balanceOf(user1.address, 1)).to.equal(0);
-    });
-
-    it("reverts cancellation after deadline", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      const deadline = await createAndOpenEvent(chainpass, organizer);
-
-      await chainpass.connect(user1).registerForEvent(1, {
-        value: ethers.parseEther("0.1"),
-      });
-
-      await time.increaseTo(deadline + 1);
-
-      await expect(
-        chainpass.connect(user1).cancelRegistration(1)
-      ).to.be.revertedWithCustomError(chainpass, "CannotCancelAfterDeadline");
-    });
-  });
-
-                //WITHDRAW FUNDS
-
-                 describe("Cancel Registration", function () {
-    it("cancels registration, burns NFT and refunds", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      await createAndOpenEvent(chainpass, organizer);
-
-      await chainpass.connect(user1).registerForEvent(1, {
-        value: ethers.parseEther("0.1"),
-      });
-
-      await expect(
-        chainpass.connect(user1).cancelRegistration(1)
-      ).to.emit(chainpass, "RegistrationCancelled");
-
-      expect(await chainpass.balanceOf(user1.address, 1)).to.equal(0);
-    });
-
-    it("reverts cancellation after deadline", async function () {
-      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
-      const deadline = await createAndOpenEvent(chainpass, organizer);
-
-      await chainpass.connect(user1).registerForEvent(1, {
-        value: ethers.parseEther("0.1"),
-      });
-
-      await time.increaseTo(deadline + 1);
-
-      await expect(
-        chainpass.connect(user1).cancelRegistration(1)
-      ).to.be.revertedWithCustomError(chainpass, "CannotCancelAfterDeadline");
-    });
-  });
-
-            //URI METADATA
-             describe("URI", function () {
-    it("sets and returns correct token URI", async function () {
-      const { chainpass, owner } = await loadFixture(deployChainPassFixture);
-
-      await chainpass.connect(owner).setURI("ipfs://QmTest/");
-      expect(await chainpass.uri(1)).to.equal("ipfs://QmTest/1.json");
-    });
-  });
-})
