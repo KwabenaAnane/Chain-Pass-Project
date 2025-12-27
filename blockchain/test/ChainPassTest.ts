@@ -35,6 +35,52 @@ describe("ChainPass", function () {
     return deadline;
   }
 
+                //EVENT CREATION
+    describe("Event Creation", function () {
+    it("creates an event successfully", async function () {
+      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+      const deadline = await createEvent(chainpass, organizer);
+
+      await expect(
+        chainpass.connect(organizer).createEvent(
+          "Blockchain Conference",
+          ethers.parseEther("0.1"),
+          100,
+          deadline + 1000
+        )
+      ).to.emit(chainpass, "EventCreated");
+
+      expect(await chainpass.eventCounter()).to.equal(2);
+    });
+
+    it("reverts if max participants is zero", async function () {
+      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+
+      await expect(
+        chainpass.connect(organizer).createEvent(
+          "Invalid",
+          ethers.parseEther("0.1"),
+          0,
+          (await time.latest()) + 100
+        )
+      ).to.be.revertedWithCustomError(chainpass, "InvalidMaxParticipants");
+    });
+
+    it("reverts if deadline is in the past", async function () {
+      const { chainpass, organizer } = await loadFixture(deployChainPassFixture);
+
+      await expect(
+        chainpass.connect(organizer).createEvent(
+          "Invalid",
+          ethers.parseEther("0.1"),
+          10,
+          (await time.latest()) - 1
+        )
+      ).to.be.revertedWithCustomError(chainpass, "DeadlineMustBeFuture");
+    });
+  });
+
+                  //REGISTRATION MANAGEMENT
 
 
 
