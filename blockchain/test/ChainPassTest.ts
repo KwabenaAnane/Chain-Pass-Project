@@ -104,6 +104,54 @@ describe("ChainPass", function () {
     });
   });
 
+          //EVENT REGISTRATION
+
+     describe("Event Registration", function () {
+    it("registers user and mints NFT", async function () {
+      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
+      await createAndOpenEvent(chainpass, organizer);
+
+      await expect(
+        chainpass.connect(user1).registerForEvent(1, {
+          value: ethers.parseEther("0.1"),
+        })
+      ).to.emit(chainpass, "Registered");
+
+      expect(await chainpass.balanceOf(user1.address, 1)).to.equal(1);
+      expect(await chainpass.isRegistered(1, user1.address)).to.equal(true);
+    });
+
+    it("reverts on incorrect fee", async function () {
+      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
+      await createAndOpenEvent(chainpass, organizer);
+
+      await expect(
+        chainpass.connect(user1).registerForEvent(1, {
+          value: ethers.parseEther("0.05"),
+        })
+      ).to.be.revertedWithCustomError(chainpass, "IncorrectFee");
+    });
+
+    it("enforces max participants", async function () {
+      const { chainpass, organizer, user1, user2 } = await loadFixture(deployChainPassFixture);
+
+      const deadline = (await time.latest()) + 1000;
+      await chainpass.connect(organizer).createEvent(
+        "Limited",
+        ethers.parseEther("0.1"),
+        1,
+        deadline
+      );
+      await chainpass.connect(organizer).openRegistration(1);
+
+      await chainpass.connect(user1).registerForEvent(1, { value: ethers.parseEther("0.1") });
+
+      await expect(
+        chainpass.connect(user2).registerForEvent(1, { value: ethers.parseEther("0.1") })
+      ).to.be.revertedWithCustomError(chainpass, "EventFull");
+    });
+  });
+
 
 
 
