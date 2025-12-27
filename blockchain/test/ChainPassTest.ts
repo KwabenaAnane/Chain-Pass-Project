@@ -186,12 +186,47 @@ describe("ChainPass", function () {
     });
   });
 
+                //WITHDRAW FUNDS
 
+                 describe("Cancel Registration", function () {
+    it("cancels registration, burns NFT and refunds", async function () {
+      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
+      await createAndOpenEvent(chainpass, organizer);
 
+      await chainpass.connect(user1).registerForEvent(1, {
+        value: ethers.parseEther("0.1"),
+      });
 
+      await expect(
+        chainpass.connect(user1).cancelRegistration(1)
+      ).to.emit(chainpass, "RegistrationCancelled");
 
+      expect(await chainpass.balanceOf(user1.address, 1)).to.equal(0);
+    });
 
+    it("reverts cancellation after deadline", async function () {
+      const { chainpass, organizer, user1 } = await loadFixture(deployChainPassFixture);
+      const deadline = await createAndOpenEvent(chainpass, organizer);
 
+      await chainpass.connect(user1).registerForEvent(1, {
+        value: ethers.parseEther("0.1"),
+      });
 
+      await time.increaseTo(deadline + 1);
 
+      await expect(
+        chainpass.connect(user1).cancelRegistration(1)
+      ).to.be.revertedWithCustomError(chainpass, "CannotCancelAfterDeadline");
+    });
+  });
+
+            //URI METADATA
+             describe("URI", function () {
+    it("sets and returns correct token URI", async function () {
+      const { chainpass, owner } = await loadFixture(deployChainPassFixture);
+
+      await chainpass.connect(owner).setURI("ipfs://QmTest/");
+      expect(await chainpass.uri(1)).to.equal("ipfs://QmTest/1.json");
+    });
+  });
 })
