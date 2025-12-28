@@ -41,6 +41,8 @@ ChainPass
 │   └── package.json
 │
 └── README.md
+
+![alt text](image-1.png)
 ________________________________________
 ## 🔗 Tech Stack
 Blockchain
@@ -72,7 +74,7 @@ Key Concepts
 •	Each event is mapped to a unique eventId
 •	NFT tickets use the eventId as the token ID
 •	Tickets act as on-chain proof of registration
-•	NFT metadata is served via tokenURI (e.g., IPFS)
+•	NFT metadata is served via tokenURI (IPFS)
 ________________________________________
 
 ## 🖥️ Frontend Overview
@@ -112,7 +114,7 @@ Update contract address and ABI in the frontend config.
 Create a .env.local file:
 
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_wallet_connect_key
-NEXT_PUBLIC_ALCHEMY_API_KEY=your_rpc_url
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_Alchemy_API_key
 ________________________________________
 
 ## 🧪 Testing
