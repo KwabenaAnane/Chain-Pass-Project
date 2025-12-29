@@ -114,9 +114,9 @@ function TicketCard({
         <div className='flex-1'>
           <h3 className='text-xl font-bold mb-2'>{event.name}</h3>
           <div className='space-y-1 text-sm text-gray-300'>
-            <p>🎫 Token ID: #{eventId}</p>
-            <p>💰 Paid: {formatETH(event.fee)} ETH</p>
-            <p>📅 {formatDate(Number(event.deadline))}</p>
+            <p> Token ID: #{eventId}</p>
+            <p> Paid: {formatETH(event.fee)} ETH</p>
+            <p> {formatDate(Number(event.deadline))}</p>
           </div>
           <div className='flex gap-3 mt-3'>
             <Link
