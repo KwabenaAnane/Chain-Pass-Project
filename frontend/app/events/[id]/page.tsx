@@ -1,25 +1,26 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useReadContract, useWriteContract, useAccount } from 'wagmi';
+import { useReadContract, useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ADDRESS } from '@/lib/config';
 import { CHAINPASS_ABI } from '@/lib/abi';
 import { formatETH, formatDate, shortenAddress, isPast } from '@/lib/format';
-import { Calendar, Users, DollarSign, User, CheckCircle, XCircle, Play, Pause, Lock, Unlock } from 'lucide-react';
+import { Calendar, Users, DollarSign, User, CheckCircle, XCircle, Lock, Unlock } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function EventDetailsPage() {
   const params = useParams();
   const eventId = BigInt(params.id as string);
   const { address } = useAccount();
 
-  const { data: event } = useReadContract({
+  const { data: event, refetch: refetchEvent } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CHAINPASS_ABI,
     functionName: 'getEventDetails',
     args: [eventId],
   });
 
-  const { data: isRegistered } = useReadContract({
+  const { data: isRegistered, refetch: refetchRegistration } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CHAINPASS_ABI,
     functionName: 'isRegistered',
@@ -27,14 +28,24 @@ export default function EventDetailsPage() {
     query: { enabled: !!address },
   });
 
-  const { data: participants } = useReadContract({
+  const { data: participants, refetch: refetchParticipants } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CHAINPASS_ABI,
     functionName: 'getParticipants',
     args: [eventId],
   });
 
-  const { writeContract, isPending } = useWriteContract();
+  const { writeContract, isPending, data: hash } = useWriteContract();
+  
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  useEffect(() => {
+    if (isSuccess) {
+      refetchEvent();
+      refetchRegistration();
+      refetchParticipants();
+    }
+  }, [isSuccess, refetchEvent, refetchRegistration, refetchParticipants]);
 
   if (!event) {
     return (
@@ -94,9 +105,10 @@ export default function EventDetailsPage() {
     });
   };
 
+  const isProcessing = isPending || isConfirming;
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 md:py-12">
-      {/* Header */}
       <div className="card mb-6">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
           <div className="flex-1">
@@ -121,13 +133,12 @@ export default function EventDetailsPage() {
             )}
             {isEnded && (
               <span className="bg-red-500/20 text-red-300 border border-red-500/50 px-4 py-2 rounded-xl text-sm font-semibold inline-flex items-center gap-2">
-                <XCircle size={16} /> Ended
+                <CheckCircle size={16} /> Ended
               </span>
             )}
           </div>
         </div>
 
-        {/* Event Stats Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white/5 p-4 rounded-xl border border-white/10">
             <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
@@ -164,25 +175,24 @@ export default function EventDetailsPage() {
           </div>
         </div>
 
-        {/* User Actions */}
         {!isOrganizer && address && (
           <div className="space-y-3">
             {!isRegistered && event.isOpen && !isEnded && !isFull && (
               <button 
                 onClick={handleRegister} 
-                disabled={isPending}
+                disabled={isProcessing}
                 className="btn-primary w-full"
               >
-                {isPending ? 'Processing...' : `Register for ${formatETH(event.fee)} ETH`}
+                {isProcessing ? 'Processing...' : `Register for ${formatETH(event.fee)} ETH`}
               </button>
             )}
             {isRegistered && !isEnded && (
               <button 
                 onClick={handleCancel}
-                disabled={isPending}
+                disabled={isProcessing}
                 className="btn-secondary w-full"
               >
-                {isPending ? 'Processing...' : 'Cancel Registration & Get Refund'}
+                {isProcessing ? 'Processing...' : 'Cancel Registration & Get Refund'}
               </button>
             )}
             {isRegistered && (
@@ -194,7 +204,6 @@ export default function EventDetailsPage() {
           </div>
         )}
 
-        {/* Organizer Controls */}
         {isOrganizer && (
           <div className="border-t border-white/10 pt-6 mt-6">
             <h3 className="font-bold mb-4 flex items-center gap-2">
@@ -205,31 +214,31 @@ export default function EventDetailsPage() {
               {!event.isOpen && !isEnded && (
                 <button 
                   onClick={handleOpenRegistration}
-                  disabled={isPending}
+                  disabled={isProcessing}
                   className="btn-primary flex items-center justify-center gap-2"
                 >
                   <Unlock size={18} />
-                  {isPending ? 'Processing...' : 'Open Registration'}
+                  {isProcessing ? 'Processing...' : 'Open Registration'}
                 </button>
               )}
               {event.isOpen && !isEnded && (
                 <button 
                   onClick={handleCloseRegistration}
-                  disabled={isPending}
+                  disabled={isProcessing}
                   className="btn-secondary flex items-center justify-center gap-2"
                 >
                   <Lock size={18} />
-                  {isPending ? 'Processing...' : 'Close Registration'}
+                  {isProcessing ? 'Processing...' : 'Close Registration'}
                 </button>
               )}
               {isEnded && !event.fundsWithdrawn && Number(event.participantCount) > 0 && (
                 <button 
                   onClick={handleWithdraw}
-                  disabled={isPending}
+                  disabled={isProcessing}
                   className="btn-primary sm:col-span-2 flex items-center justify-center gap-2"
                 >
                   <DollarSign size={18} />
-                  {isPending ? 'Processing...' : `Withdraw ${formatETH(event.fee * event.participantCount)} ETH`}
+                  {isProcessing ? 'Processing...' : `Withdraw ${formatETH(event.fee * event.participantCount)} ETH`}
                 </button>
               )}
               {event.fundsWithdrawn && (
@@ -243,7 +252,6 @@ export default function EventDetailsPage() {
         )}
       </div>
 
-      {/* Participants List */}
       <div className="card">
         <h3 className="font-bold mb-4 flex items-center gap-2">
           <Users size={20} className="text-secondary" />
