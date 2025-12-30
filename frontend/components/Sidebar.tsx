@@ -40,7 +40,7 @@ export default function Sidebar() {
               `}
             >
               <Icon size={20} />
-              <span className="font-medium">{link.label}</span>
+              {link.label}
             </Link>
           );
         })}
