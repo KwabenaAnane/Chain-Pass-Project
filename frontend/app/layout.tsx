@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import Sidebar from '@/components/Sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,12 +24,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang='en'>
-      <body className={inter.className}>
+    <html lang="en">
+      <body className={`${inter.className} bg-dark-900 text-white`}>
         <Providers>
+          {/* Top Navbar */}
           <Navbar />
-          <main className='min-h-screen'>{children}</main>
-          <Footer />
+
+          {/* Sidebar */}
+          <Sidebar />
+
+          {/* Main Content */}
+          <main className="min-h-screen pt-20 md:ml-64 px-6">
+            {children}
+          </main>
+
+          {/* Footer */}
+          <footer className="md:ml-64">
+            <Footer />
+          </footer>
         </Providers>
       </body>
     </html>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useReadContract } from 'wagmi';
+import { useReadContract, useAccount } from 'wagmi';
 import { CONTRACT_ADDRESS } from '@/lib/config';
 import { CHAINPASS_ABI } from '@/lib/abi';
 import { isAddress } from 'viem';
@@ -10,15 +10,16 @@ import {
   CheckCircle,
   XCircle,
   Search,
-  AlertCircle,
+  User,
 } from 'lucide-react';
 
 export default function VerifyPage() {
+  const { address } = useAccount();
   const [walletAddress, setWalletAddress] = useState('');
   const [eventId, setEventId] = useState('');
   const [checking, setChecking] = useState(false);
 
-  const { data: balance, refetch } = useReadContract({
+  const { data: balance, refetch: refetchBalance } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CHAINPASS_ABI,
     functionName: 'balanceOf',
@@ -26,12 +27,12 @@ export default function VerifyPage() {
     query: { enabled: false },
   });
 
-  const { data: event } = useReadContract({
+  const { data: event, refetch: refetchEvent } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CHAINPASS_ABI,
     functionName: 'getEventDetails',
     args: [BigInt(eventId || 0)],
-    query: { enabled: !!eventId && balance !== undefined },
+    query: { enabled: false },
   });
 
   const handleVerify = async () => {
@@ -45,11 +46,14 @@ export default function VerifyPage() {
     }
 
     setChecking(true);
-    await refetch();
+    await refetchBalance();
+    await refetchEvent();
     setChecking(false);
   };
 
   const hasTicket = balance !== undefined && balance > 0n;
+  const isOrganizer = event && address?.toLowerCase() === event.organizer.toLowerCase();
+  const canVerify = hasTicket || isOrganizer;
 
   return (
     <div className='max-w-3xl mx-auto px-4 py-8 md:py-12'>
@@ -92,14 +96,17 @@ export default function VerifyPage() {
         </div>
 
         <div className='pt-4'>
-          <button className='btn-primary w-full flex items-center justify-center gap-2'>
+          <button 
+            onClick={handleVerify}
+            disabled={checking}
+            className='btn-primary w-full flex items-center justify-center gap-2'>
             <Search size={20} />
             {checking ? 'Checking...' : 'Verify Ticket'}
           </button>
         </div>
 
         {/* Result */}
-        {balance !== undefined && (
+        {balance !== undefined && event && (
           <div
             className={`p-8 rounded-2xl text-center transition-all duration-500 ${
               hasTicket
@@ -127,7 +134,7 @@ export default function VerifyPage() {
               {hasTicket ? 'VALID TICKET' : 'INVALID TICKET'}
             </h2>
 
-            {hasTicket && event && (
+            {event && (
               <div className='mt-6 space-y-3 text-left bg-black/20 p-4 rounded-xl'>
                 <div className='flex justify-between text-sm'>
                   <span className='text-gray-400'>Event:</span>
@@ -143,15 +150,34 @@ export default function VerifyPage() {
                     {walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}
                   </span>
                 </div>
+                {isOrganizer && (
+                  <div className='flex justify-between text-sm border-t border-white/10 pt-3 mt-3'>
+                    <span className='text-gray-400'>Your Role:</span>
+                    <span className='font-semibold text-primary flex items-center gap-1'>
+                      <User size={14} />
+                      Event Organizer
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
-            <div
-              className={`mt-6 py-3 px-6 rounded-xl font-bold text-lg ${
-                hasTicket ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-              }`}>
-              {hasTicket ? '✓ Allow Entry' : '✗ Deny Entry'}
-            </div>
+            {/* Entry Decision - Only show if user can verify */}
+            {canVerify && (
+              <div
+                className={`mt-6 py-3 px-6 rounded-xl font-bold text-lg ${
+                  hasTicket ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}>
+                {hasTicket ? '✓ Allow Entry' : '✗ Deny Entry'}
+              </div>
+            )}
+
+            {/* Access Denied for non-organizers without ticket */}
+            {!canVerify && (
+              <div className='mt-6 py-3 px-6 rounded-xl font-bold text-lg bg-gray-500/50 text-gray-300 border border-gray-500'>
+                ⚠ Access Denied: You are not the organizer or ticket holder
+              </div>
+            )}
           </div>
         )}
       </div>

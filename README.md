@@ -30,7 +30,7 @@ ChainPass
 │   ├── test/
 │   ├── hardhat.config.js
 │   └── package.json
-│
+├── chainpass-metadata
 ├── frontend/          # Web application (Next.js)
 │   ├── app/
 │   ├── components/
@@ -50,6 +50,7 @@ Blockchain
 •	Hardhat
 •	OpenZeppelin Contracts
 •	Ethereum (Sepolia Testnet)
+
 Frontend
 •	Next.js
 •	React
@@ -57,6 +58,7 @@ Frontend
 •	TailwindCSS
 •	Ethers.js
 •	MetaMask
+
 Tooling & Infrastructure
 •	Alchemy RPC
 •	GitHub
